@@ -13,11 +13,12 @@ app.get('/', function (req, res) {
   res.send('CoShoot Locally')
 })
 
-let roomUserIds = []
+let roomUserIds = {}
 
 function makeid(length) {
   var text = "";
-  var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  //var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  var possible = "abcdefghijklmnopqrstuvwxyz";
 
   for (var i = 0; i < length; i++)
     text += possible.charAt(Math.floor(Math.random() * possible.length));
@@ -33,30 +34,30 @@ io.on('connection', (socket) => {
       roomId = makeid(5)
       // get user info and set socket info
       let { name } = msg
-      socket.user = { name, uid: roomUserIds.length }
+      socket.user = { name, uid: 0 }
 
       // join the correct room
       socket.join(roomId)
-      for (let user of roomUserIds) {
-        socket.emit('user joined', `${user}`)
-      }
 
-      roomUserIds.push(socket.user)
+      roomUserIds[roomId] = [socket.user]
 
       socket.emit('room created', roomId)
       console.log(`user ${socket.user.uid} has created room ${roomId}`)
     } else {
       // get user info and set socket info
       let { name } = msg
-      socket.user = { name, uid: roomUserIds.length }
+      socket.user = { name, uid: roomUserIds[roomId].length }
 
       // join the correct room
       socket.join(roomId)
-      for (let user of roomUserIds) {
+
+      socket.emit('user joined', socket.user)
+
+      for (let user of roomUserIds[roomId]) {
         socket.emit('user joined', user)
       }
 
-      roomUserIds.push(socket.user)
+      roomUserIds[roomId].push(socket.user)
 
       socket.to(roomId).emit('user joined', socket.user)
       console.log(`user ${socket.user.uid} has joined room ${roomId}`)
@@ -64,13 +65,14 @@ io.on('connection', (socket) => {
   })
 
   socket.on('user joined', (msg) => {
-    roomUserIds.push(msg)
+    roomUserIds[roomId].push(msg)
   })
 
   socket.on('start', (msg) => {
     // get current date
     let date = new Date()
     console.log("start triggered and user " + msg.uid + " will start first at " + date)
+    socket.emit('start', {user: msg})
     socket.to(roomId).emit('start', { user: msg })
   })
 
@@ -78,6 +80,7 @@ io.on('connection', (socket) => {
     // get new date and save user i
     let date = new Date()
     console.log("user " + socket.user.uid + " has taken control at " + date)
+    socket.emit('control', { user: socket.user })
     socket.to(roomId).emit('control', { user: socket.user })
   })
 
@@ -107,6 +110,8 @@ io.on('connection', (socket) => {
     // .on('error', function(err){
     //     console.log('error: ', +err);
     // }).run()
+    socket.emit('stop', {})
+
     socket.to(roomId).emit('stop', {})
   })
 
@@ -119,7 +124,7 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', function () {
     if (socket.user) {
-      roomUserIds = roomUserIds.filter(user => user.uid != socket.user.uid)
+      roomUserIds[roomId] = roomUserIds[roomId].filter(user => user.uid != socket.user.uid)
     }
     console.log('user disconnected');
   });

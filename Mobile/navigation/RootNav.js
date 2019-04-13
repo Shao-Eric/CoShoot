@@ -17,7 +17,7 @@ export default createAppContainer(
       }
     },
     {
-      initialRouteName: "Shoot",
+      initialRouteName: "Home",
       headerMode: "none"
     }
   )

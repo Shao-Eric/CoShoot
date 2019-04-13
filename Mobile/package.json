@@ -7,13 +7,16 @@
     "eject": "expo eject"
   },
   "dependencies": {
-    "expo": "^32.0.0",
-    "react": "16.5.0",
-    "react-native": "https://github.com/expo/react-native/archive/sdk-32.0.0.tar.gz",
-    "react-navigation": "^3.8.1"
+    "expo": "^32.0.6",
+    "react": "16.6.3",
+    "react-native": "https://github.com/expo/react-native/archive/sdk-31-with-hooks-experimental.tar.gz",
+    "react-navigation": "^3.8.1",
+    "socket.io-client": "^2.2.0"
   },
   "devDependencies": {
-    "babel-preset-expo": "^5.0.0"
+    "@babel/plugin-syntax-export-default-from": "^7.2.0",
+    "babel-preset-expo": "^5.1.1",
+    "react-test-renderer": "16.6.3"
   },
   "private": true
 }
