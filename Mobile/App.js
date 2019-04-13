@@ -5,7 +5,7 @@ import RootNav from './navigation/RootNav';
 export default class App extends React.Component {
   render() {
     return (
-      <View>
+      <View style={{flex: 1}}>
         <RootNav/>
       </View>
     );
