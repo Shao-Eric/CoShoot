@@ -4,10 +4,19 @@ var http = require('http').Server(app)
 var io = require('socket.io')(http)
 var cors = require('cors')
 var ss = require('socket.io-stream');
+var fs = require('fs')
+const fsPromises = fs.promises
 var path = require('path');
 var ffmpeg = require('fluent-ffmpeg');
 
 app.use(cors())
+
+function getTimeDifference(date1, date2) {
+  let milliseconds = Math.abs(date2 - date1)
+  var minutes = Math.floor(milliseconds / 60000);
+  var seconds = ((milliseconds % 60000) / 1000)
+  return (seconds == 60 ? (minutes+1) + ":00" : minutes + ":" + (seconds < 10 ? "0" : "") + seconds)
+}
 
 app.get('/', function (req, res) {
   res.send('CoShoot Locally')
@@ -94,31 +103,6 @@ io.on('connection', (socket) => {
 
   socket.on('stop', (msg) => {
     console.log('stop called by creator')
-
-    // ffmpeg('./TestVid.mp4')
-    // .input('./TestVid.mp4')
-    // .on('end', function(err) {
-    //   if(!err){
-    //     console.log('Merging finished !');
-    //   }
-    // })
-    // .on('error', function(err) {
-    //   console.log('An error occurred: ' + err.message);
-    // })
-    // .mergeToFile('./merged.mp4', './tempdir/')
-    // ffmpeg('./SampleVideo_1280x720_30mb.mp4')
-    // .setStartTime('00:00:00')
-    // .setDuration('40')
-    // .output('./TestVid.mp4')
-    // .on('end', function(err) {   
-    //   if(!err)
-    //   {
-    //     console.log('conversion Done');
-    //   }                 
-    // })
-    // .on('error', function(err){
-    //     console.log('error: ', +err);
-    // }).run()
     socket.emit('stop', {})
 
     socket.to(roomId).emit('stop', {})
@@ -128,19 +112,64 @@ io.on('connection', (socket) => {
     // file goes here
     console.log("A file has been recieved with url: ", msg)
     if (roomId in recievedVideos) {
-      recievedVideos[roomId] = recievedVideos[roomId].push(msg)
+      recievedVideos[roomId] = recievedVideos[roomId].push({
+        uid: socket.user.uid,
+        url: msg
+      })
     } else {
-      recievedVideos[roomId] = [msg]
+      recievedVideos[roomId] = [{
+        uid: socket.user.uid,
+        url: msg
+      }]
     }
     if (recievedVideos[roomId].length === roomUserIds[roomId].length) {
       console.log("All files have been recieved", recievedVideos)
-      cutSequences[roomId] // start time, start user, cuts array
-      recievedVideos[roomId] // array of video files
-      // call video clipping function
+      if(!fs.existsSync(`./videos/${roomId}`)){
+        fs.mkdir(`./videos/${roomId}`, { recursive: true }, (err) => {
+          if (err) throw err;
+        })
+      }
+      let array = [{uid: cutSequences[roomId].startUser, time: cutSequences[roomId].startTime}, ...cutSequences[roomId].cuts]
+      let promises = array.map(({uid, time}, index) => {
+        let outputPath = `${roomId}/${index}.mp4`
+        let firebaseURL = recievedVideos[roomId].filter(item => item.uid == uid)
+        let start, duration
+        if(index == 0){
+          start = '00:00:00'
+        } else {
+          start = getTimeDifference(time - array[index - 1].time)
+        }
+        duration = getTimeDifference(array[index + 1].time - time)
+        return new Promise((resolve, reject) => {
+          ffmpeg(firebaseURL)
+          .setStartTime(start)
+          .setDuration(duration)
+          .output(outputPath)
+          .on('end', function(err) {
+            resolve(`./videos/${outputPath}`)
+          })
+          .on('error', function(err) {
+            reject(err)
+          })
+        })
+      })
+
+      Promise.all(promises).then(res => {
+        let merge = ffmpeg()
+        res.forEach(file => {
+          merge.addInput(file)
+        })
+        merge.on('error', function(err) {
+          console.log('An error occurred: ' + err.message);
+        })
+        .on('end', function() {
+          fsPromises.unlink(res).then(() => console.log(`deleted ${res}`)).catch(err => console.log(err))
+          console.log('Merging finished !')
+        })
+        .mergeToFile('./videos/merged.mp4', './tempdir/')
+      })
     }
-
     console.log("requesting all videos")
-
   })
 
   socket.on('disconnect', function () {
