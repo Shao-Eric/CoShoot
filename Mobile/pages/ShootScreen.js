@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { Camera, Permissions } from "expo";
 import { SocketContext } from '../context/SocketContext'
-
+import firebase from 'firebase'
 
 export default class ShootScreen extends React.Component {
     constructor(props) {
@@ -10,7 +10,7 @@ export default class ShootScreen extends React.Component {
         let { firstUser } = this.props.navigation.state.params
 
         this.camera = React.createRef();
-        this.state = { permissionsGranted: false, bcolor: "red", currentShooter: firstUser };
+        this.state = { permissionsGranted: false, currentShooter: firstUser };
 
 
     }
@@ -19,6 +19,8 @@ export default class ShootScreen extends React.Component {
 
 
     async componentDidMount() {
+        let { firstUser, userInfo, owner, roomId } = this.props.navigation.state.params
+
         let cameraResponse = await Permissions.askAsync(Permissions.CAMERA);
         if (cameraResponse.status == "granted") {
             let audioResponse = await Permissions.askAsync(
@@ -29,24 +31,34 @@ export default class ShootScreen extends React.Component {
             }
         }
 
+        setTimeout(() => this.camera.recordAsync({ quality: Camera.Constants.VideoQuality['720p'] }).then(async (data) => {
+            const blob = await new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.onload = function () {
+                    resolve(xhr.response); // when BlobModule finishes reading, resolve with the blob
+                };
+                xhr.onerror = function () {
+                    reject(new TypeError('Network request failed')); // error occurred, rejecting
+                };
+                xhr.responseType = 'blob'; // use BlobModule's UriHandler
+                xhr.open('GET', data.uri, true); // fetch the blob from uri in async mode
+                xhr.send(null); // no initial data
+            });
+
+            const ref = firebase.storage().ref().child('files/' + roomId + "-" + userInfo.uid)
+            let snapshot = await ref.put(blob)
+
+            let url = await snapshot.ref.getDownloadURL()
+            this.context.emit('recieve file', url)
+        }), 5000)
+
         this.context.on('control', (msg) => {
             this.setState({ currentShooter: msg.user })
         });
         this.context.on('stop', (msg) => {
-            console.log("Game fucking over")
+            this.camera.stopRecording()
+            this.props.navigation.navigate('Home')
         });
-    }
-
-
-    takeFilm() {
-        let self = this;
-        if (this.camera) {
-            this.camera.recordAsync().then(data => {
-                self.setState({ bcolor: "green" });
-                console.log("date:");
-                console.log(data);
-            });
-        }
     }
 
     render() {
@@ -73,9 +85,9 @@ export default class ShootScreen extends React.Component {
                             alignItems: "center"
                         }}
                         type={this.state.type}
-                        ref={ref => {
-                            this.camera = ref;
-                        }}
+                        ref={ref =>
+                            this.camera = ref
+                        }
                     >
                         <View
                             style={{

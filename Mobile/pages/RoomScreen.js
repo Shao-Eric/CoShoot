@@ -32,7 +32,7 @@ export default class RoomScreen extends React.Component {
             this.setState({ users: [...this.state.users, msg] })
         });
         this.context.on('start', (msg) => {
-            this.props.navigation.navigate("Shoot", { firstUser: msg.user, userInfo: this.state.userInfo, owner: this.newRoom })
+            this.props.navigation.navigate("Shoot", { firstUser: msg.user, userInfo: this.state.userInfo, owner: this.newRoom, roomId: this.state.roomCode })
         });
     }
 

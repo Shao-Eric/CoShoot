@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "expo": "^32.0.6",
+    "firebase": "^5.9.4",
     "react": "16.6.3",
     "react-native": "https://github.com/expo/react-native/archive/sdk-31-with-hooks-experimental.tar.gz",
     "react-navigation": "^3.8.1",

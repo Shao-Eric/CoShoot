@@ -124,23 +124,20 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('stop', {})
   })
 
-  ss(socket).on('receive file', (stream, data) => {
+  socket.on('recieve file', (msg) => {
     // file goes here
-    var filename = path.basename(`/raw/${roomId - socket.user.uid}.mp4`);
-    stream.pipe(fs.createWriteStream(filename))
-    stream.on('close', function () {
-      if ('roomId' in recievedVideos) {
-        recievedVideos[roomId] = recievedVideos[roomId].push(path.basename(`/raw/${roomId - socket.user.uid}.mp4`))
-      } else {
-        recievedVideos[roomId] = [path.basename(`/raw/${roomId - socket.user.uid}.mp4`)]
-      }
-      recievedVideos[roomId].push(`${socket.user.uid}.mp4`)
-      if (recievedVideos.length === roomUserIds.length) {
-        cutSequences[roomId] // start time, start user, cuts array
-        recievedVideos[roomId] // array of video files
-        // call video clipping function
-      }
-    });
+    console.log("A file has been recieved with url: ", msg)
+    if (roomId in recievedVideos) {
+      recievedVideos[roomId] = recievedVideos[roomId].push(msg)
+    } else {
+      recievedVideos[roomId] = [msg]
+    }
+    if (recievedVideos[roomId].length === roomUserIds[roomId].length) {
+      console.log("All files have been recieved", recievedVideos)
+      cutSequences[roomId] // start time, start user, cuts array
+      recievedVideos[roomId] // array of video files
+      // call video clipping function
+    }
 
     console.log("requesting all videos")
 
