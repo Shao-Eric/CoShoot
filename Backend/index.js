@@ -1,9 +1,11 @@
+require('dotenv').config()
 var app = require('express')()
 var http = require('http').Server(app)
 var io = require('socket.io')(http)
 var cors = require('cors')
 var ss = require('socket.io-stream');
 var path = require('path');
+var ffmpeg = require('fluent-ffmpeg');
 
 app.use(cors())
 
@@ -80,15 +82,39 @@ io.on('connection', (socket) => {
   })
 
   socket.on('stop', (msg) => {
-    console.log("stop called by creator, requesting all videos")
+    console.log('stop called by creator')
+    // ffmpeg('./TestVid.mp4')
+    // .input('./TestVid.mp4')
+    // .on('end', function(err) {
+    //   if(!err){
+    //     console.log('Merging finished !');
+    //   }
+    // })
+    // .on('error', function(err) {
+    //   console.log('An error occurred: ' + err.message);
+    // })
+    // .mergeToFile('./merged.mp4', './tempdir/')
+    // ffmpeg('./SampleVideo_1280x720_30mb.mp4')
+    // .setStartTime('00:00:00')
+    // .setDuration('40')
+    // .output('./TestVid.mp4')
+    // .on('end', function(err) {   
+    //   if(!err)
+    //   {
+    //     console.log('conversion Done');
+    //   }                 
+    // })
+    // .on('error', function(err){
+    //     console.log('error: ', +err);
+    // }).run()
     socket.to(roomId).emit('stop', {})
   })
 
-  ss(socket).on('recieve file', (stream, data) => {
+  ss(socket).on('receive file', (stream, data) => {
     // file goes here
-    console.log("stop called by creator, requesting all videos")
-    var filename = path.basename(data.name);
-    stream.pipe(fs.createWriteStream(filename));
+    console.log("requesting all videos")
+    // var filename = path.basename(data.name);
+    // stream.pipe(fs.createWriteStream(filename))
   })
 
   socket.on('disconnect', function () {
@@ -97,6 +123,11 @@ io.on('connection', (socket) => {
     }
     console.log('user disconnected');
   });
+})
+
+app.post('/test', (req, res) => {
+  let name = req.body.uid
+  res.send(name)
 })
 
 http.listen(3000, function () {
