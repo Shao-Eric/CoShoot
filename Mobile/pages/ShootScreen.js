@@ -65,8 +65,8 @@ export default class ShootScreen extends React.Component {
                 borderWidth: 1,
                 borderColor: "red",
                 position: "absolute",
-                width: 330,
-                height: 600,
+                width: "85%",
+                height: "85%",
                 top: 60
               }}
             >
