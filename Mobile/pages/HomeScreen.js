@@ -9,9 +9,7 @@ import {
   Image
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
-import Header from "../components/Header";
 
-const fakeArray = ["a", "b", "c"];
 export default class HomeScreen extends React.Component {
   state = {
     modalVisible: false,
