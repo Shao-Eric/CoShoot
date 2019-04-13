@@ -1,0 +1,19 @@
+{
+  "name": "coshoot",
+  "version": "1.0.0",
+  "description": "CoShoot Backend",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davidmargolin/CoShoot.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/davidmargolin/CoShoot/issues"
+  },
+  "homepage": "https://github.com/davidmargolin/CoShoot#readme"
+}
