@@ -14,7 +14,8 @@ app.get('/', function (req, res) {
 })
 
 let roomUserIds = {}
-
+let cutSequences = {}
+let recievedVideos = {}
 function makeid(length) {
   var text = "";
   //var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -72,13 +73,20 @@ io.on('connection', (socket) => {
     // get current date
     let date = new Date()
     console.log("start triggered and user " + msg.uid + " will start first at " + date)
-    socket.emit('start', {user: msg})
+    cutSequences[roomId] = { startTime: date, startUser: msg.uid }
+    socket.emit('start', { user: msg })
     socket.to(roomId).emit('start', { user: msg })
   })
 
   socket.on('control', (msg) => {
     // get new date and save user i
     let date = new Date()
+    if ('cuts' in cutSequences[roomId]) {
+      cutSequences[roomId]['cuts'].push({ uid: socket.user.uid, date })
+    } else {
+      cutSequences[roomId]['cuts'] = [{ uid: socket.user.uid, date }]
+    }
+
     console.log("user " + socket.user.uid + " has taken control at " + date)
     socket.emit('control', { user: socket.user })
     socket.to(roomId).emit('control', { user: socket.user })
@@ -86,6 +94,7 @@ io.on('connection', (socket) => {
 
   socket.on('stop', (msg) => {
     console.log('stop called by creator')
+
     // ffmpeg('./TestVid.mp4')
     // .input('./TestVid.mp4')
     // .on('end', function(err) {
@@ -117,9 +126,24 @@ io.on('connection', (socket) => {
 
   ss(socket).on('receive file', (stream, data) => {
     // file goes here
+    var filename = path.basename(`/raw/${roomId - socket.user.uid}.mp4`);
+    stream.pipe(fs.createWriteStream(filename))
+    stream.on('close', function () {
+      if ('roomId' in recievedVideos) {
+        recievedVideos[roomId] = recievedVideos[roomId].push(path.basename(`/raw/${roomId - socket.user.uid}.mp4`))
+      } else {
+        recievedVideos[roomId] = [path.basename(`/raw/${roomId - socket.user.uid}.mp4`)]
+      }
+      recievedVideos[roomId].push(`${socket.user.uid}.mp4`)
+      if (recievedVideos.length === roomUserIds.length) {
+        cutSequences[roomId] // start time, start user, cuts array
+        recievedVideos[roomId] // array of video files
+        // call video clipping function
+      }
+    });
+
     console.log("requesting all videos")
-    // var filename = path.basename(data.name);
-    // stream.pipe(fs.createWriteStream(filename))
+
   })
 
   socket.on('disconnect', function () {
