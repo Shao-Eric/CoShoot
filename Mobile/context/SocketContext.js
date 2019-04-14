@@ -1,7 +1,7 @@
 import React from "react";
 import io from "socket.io-client";
 
-const socket = io("http://5fe84dba.ngrok.io");
+const socket = io("https://5fbdf468.ngrok.io");
 
 export const SocketContext = React.createContext();
 
