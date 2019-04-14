@@ -15,7 +15,8 @@ function getTimeDifference(date1, date2) {
   let milliseconds = Math.abs(date2 - date1)
   var minutes = Math.floor(milliseconds / 60000);
   var seconds = ((milliseconds % 60000) / 1000)
-  return (seconds == 60 ? (minutes+1) + ":00" : minutes + ":" + (seconds < 10 ? "0" : "") + seconds)
+  let answer = (seconds == 60 ? (minutes+1) + ":00" : minutes + ":" + (seconds < 10 ? "0" : "") + seconds)
+  return answer
 }
 
 app.get('/', function (req, res) {
@@ -103,6 +104,7 @@ io.on('connection', (socket) => {
 
   socket.on('stop', (msg) => {
     console.log('stop called by creator')
+    cutSequences[roomId]['cuts'][cutSequences[roomId]['cuts'].length-1]['endTime'] = new Date()
     socket.emit('stop', {})
 
     socket.to(roomId).emit('stop', {})
@@ -110,9 +112,9 @@ io.on('connection', (socket) => {
 
   socket.on('recieve file', (msg) => {
     // file goes here
-    console.log("A file has been recieved with url: ", msg)
+    console.log("A file has been received with url: ", msg)
     if (roomId in recievedVideos) {
-      recievedVideos[roomId] = recievedVideos[roomId].push({
+      recievedVideos[roomId].push({
         uid: socket.user.uid,
         url: msg
       })
@@ -122,54 +124,74 @@ io.on('connection', (socket) => {
         url: msg
       }]
     }
-    if (recievedVideos[roomId].length === roomUserIds[roomId].length) {
-      console.log("All files have been recieved", recievedVideos)
-      if(!fs.existsSync(`./videos/${roomId}`)){
-        fs.mkdir(`./videos/${roomId}`, { recursive: true }, (err) => {
+    if (recievedVideos[roomId].length == roomUserIds[roomId].length) {
+      console.log("All files have been received", recievedVideos)
+      if(!fs.existsSync(`./videos/${roomId}/`)){
+        fs.mkdir(`./videos/${roomId}/`, { recursive: true }, (err) => {
           if (err) throw err;
         })
       }
-      let array = [{uid: cutSequences[roomId].startUser, time: cutSequences[roomId].startTime}, ...cutSequences[roomId].cuts]
-      let promises = array.map(({uid, time}, index) => {
-        let outputPath = `${roomId}/${index}.mp4`
-        let firebaseURL = recievedVideos[roomId].filter(item => item.uid == uid)
+      let array = [{uid: cutSequences[roomId].startUser, date: cutSequences[roomId].startTime}, ...cutSequences[roomId].cuts]
+      let promises = array.map((clip, index) => {
+        let newArray = recievedVideos[roomId].slice()
+        let outputPath = `./videos/${roomId}/${index}.mp4`
+        let firebaseURL = newArray.filter(item => item.uid == clip.uid)[0].url
         let start, duration
         if(index == 0){
           start = '00:00:00'
         } else {
-          start = getTimeDifference(time - array[index - 1].time)
+          start = `${clip.date.getHours()}:${clip.date.getMinutes()}:${clip.date.getSeconds()}`
         }
-        duration = getTimeDifference(array[index + 1].time - time)
-        return new Promise((resolve, reject) => {
-          ffmpeg(firebaseURL)
-          .setStartTime(start)
-          .setDuration(duration)
-          .output(outputPath)
-          .on('end', function(err) {
-            resolve(`./videos/${outputPath}`)
-          })
-          .on('error', function(err) {
-            reject(err)
-          })
-        })
+        if(index == array.length - 1){
+          duration = getTimeDifference(clip.date, clip.endTime)
+          return new Promise((resolve, reject) => 
+            ffmpeg(firebaseURL)
+            .setStartTime(start)
+            .setDuration(duration)
+            .output(outputPath)
+            .on('end', (err) => {
+              console.log(err)
+              resolve(outputPath)
+            })
+            .on('error', (err) => {
+              reject(err)
+            }).run()
+          )
+        } else {
+          duration = getTimeDifference(clip.date, array[index + 1].date)
+          return new Promise((resolve, reject) => 
+            ffmpeg(firebaseURL)
+            .setStartTime(start)
+            .setDuration(duration)
+            .output(outputPath)
+            .on('end', (err) => {
+              console.log(err)
+              resolve(outputPath)
+            })
+            .on('error', (err) => {
+              reject(err)
+            }).run()
+          )
+        }
       })
 
-      Promise.all(promises).then(res => {
+      Promise.all(promises).then(response => {
+        console.log(response)
         let merge = ffmpeg()
-        res.forEach(file => {
+        response.forEach(file => {
           merge.addInput(file)
         })
-        merge.on('error', function(err) {
+        merge
+        .on('error', function(err) {
           console.log('An error occurred: ' + err.message);
         })
         .on('end', function() {
-          fsPromises.unlink(res).then(() => console.log(`deleted ${res}`)).catch(err => console.log(err))
           console.log('Merging finished !')
         })
-        .mergeToFile('./videos/merged.mp4', './tempdir/')
+        .mergeToFile(`.videos/mergedVideo.mp4`, './tempdir')
       })
+      
     }
-    console.log("requesting all videos")
   })
 
   socket.on('disconnect', function () {
