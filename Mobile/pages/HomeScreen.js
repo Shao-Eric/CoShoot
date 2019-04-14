@@ -10,6 +10,8 @@ import {
   Image,
   Share
 } from "react-native";
+import mockData from "./mock.js";
+import { LinearGradient } from "expo";
 import { AntDesign } from "@expo/vector-icons";
 
 export default class HomeScreen extends React.Component {
@@ -20,13 +22,13 @@ export default class HomeScreen extends React.Component {
   };
 
   componentWillMount() {
-    fetch("https://rallycoding.herokuapp.com/api/music_albums")
-      .then(response => response.json())
-      .then(data =>
-        this.setState({ data }, () => {
-          console.log(this.state.data);
-        })
-      );
+    // fetch(mock)
+    //   .then(response => response.json())
+    //   .then(data =>
+    //     this.setState({ data }, () => {
+    //       console.log(this.state.data);
+    //     })
+    //   );
   }
 
   setModalVisible = (modalVisible, join) => {
@@ -150,8 +152,7 @@ export default class HomeScreen extends React.Component {
           style={{
             flexDirection: "row",
             justifyContent: "center",
-            alignItems: "center",
-            margin: 4
+            alignItems: "center"
           }}
         >
           <TouchableOpacity
@@ -193,71 +194,87 @@ export default class HomeScreen extends React.Component {
         </View>
         <FlatList
           style={{ flex: 1 }}
-          data={this.state.data}
+          data={mockData}
           keyExtractor={item => item.title}
           renderItem={each => (
             <View
               style={{
                 borderWidth: 1,
-                borderRadius: 2,
                 borderColor: "#ddd",
-                borderBottomWidth: 0,
+                borderBottomWidth: 5,
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.1,
                 shadowRadius: 2,
-                elevation: 1,
-                marginLeft: 5,
-                marginRight: 5
+                elevation: 1
               }}
             >
-              <View
-                style={{
-                  borderBottomWidth: 1,
-                  padding: 5,
-                  backgroundColor: "#fff",
-                  justifyContent: "space-between",
-                  flexDirection: "row",
-                  borderColor: "#ddd",
-                  position: "relative"
-                }}
-              >
-                <View style={styles.thumbnailContainerStyle}>
-                  <Image
-                    style={{ height: 80, width: 80 }}
-                    source={{
-                      uri: each.item.thumbnail_image
+              <View style={{ justifyContent: "center" }}>
+                <Image
+                  style={{ height: 160, width: "100%", borderRadius: 8 }}
+                  source={{
+                    uri: each.item.thumbnail_image
+                  }}
+                  resizeMode="cover"
+                />
+                <LinearGradient
+                  colors={["transparent", "black"]}
+                  style={{
+                    borderRadius: 8,
+                    height: 160,
+                    width: "100%",
+                    position: "absolute",
+                    top: 0,
+                    right: 0,
+                    left: 0
+                  }}
+                />
+                <View
+                  style={{
+                    flexDirection: "column",
+                    position: "absolute",
+
+                    bottom: 10
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 18,
+                      color: "white",
+                      fontWeight: "bold",
+                      paddingHorizontal: 10
                     }}
-                    resizeMode="contain"
-                  />
-                </View>
-                <View style={styles.headerContentStyle}>
-                  <Text style={{ fontSize: 18, textAlign: "center" }}>
+                  >
                     {each.item.title}
                   </Text>
-                  <Text style={{ marginTop: 10, fontSize: 15 }}>
+                  <Text
+                    style={{
+                      paddingHorizontal: 10,
+                      marginTop: 5,
+                      fontSize: 18,
+                      color: "white",
+                      fontWeight: "bold"
+                    }}
+                  >
                     {each.item.artist}
                   </Text>
                 </View>
-
                 <View
                   style={{
-                    justifyContent: "center",
-                    alignItems: "center",
-                    backgroundColor: "black"
+                    position: "absolute",
+                    right: 10,
+                    bottom: 10
                   }}
                 >
                   <TouchableHighlight
                     style={{
                       flex: 1,
                       fontWeight: "bold",
-                      backgroundColor: "white",
-                      justifyContent: "center",
-                      paddingRight: 10
+                      justifyContent: "center"
                     }}
                     onPress={this.onShare}
                   >
-                    <AntDesign name="sharealt" size={25} />
+                    <AntDesign name="sharealt" size={25} color="white" />
                   </TouchableHighlight>
                 </View>
               </View>
@@ -290,16 +307,5 @@ const styles = {
     color: "#FFF",
     paddingHorizontal: 10,
     fontSize: 20
-  },
-  thumbnailContainerStyle: {
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: 10,
-    marginRight: 10
-  },
-  headerContentStyle: {
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center"
   }
 };
