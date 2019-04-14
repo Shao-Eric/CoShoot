@@ -70,7 +70,7 @@ export default class HomeScreen extends React.Component {
             position: "relative"
           }}
         >
-          <Text style={{ fontSize: 20, color: "white" }}>CoShoot</Text>
+          <Text style={{ fontSize: 20, color: "white" }}>Co-Shoot</Text>
         </View>
 
         <Modal

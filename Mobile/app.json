@@ -1,17 +1,17 @@
 {
   "expo": {
-    "name": "CoShoot",
+    "name": "Co-Shoot",
     "slug": "com.famsquad.coshoot",
     "privacy": "public",
     "sdkVersion": "32.0.0",
     "platforms": ["ios", "android"],
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./images/logo.png",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./images/logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#4286f4"
     },
     "updates": {
       "fallbackToCacheTimeout": 0
