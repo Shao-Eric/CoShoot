@@ -4,11 +4,13 @@ import {
   Text,
   Modal,
   TouchableOpacity,
+  TouchableHighlight,
   TextInput,
   FlatList,
-  Image
+  Image,
+  Share
 } from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
+import { AntDesign } from "@expo/vector-icons";
 
 export default class HomeScreen extends React.Component {
   state = {
@@ -29,6 +31,25 @@ export default class HomeScreen extends React.Component {
 
   setModalVisible = (modalVisible, join) => {
     this.setState({ modalVisible, join });
+  };
+
+  onShare = async () => {
+    try {
+      const result = await Share.share({
+        message: "Share your video"
+      });
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          // shared with activity type of result.activityType
+        } else {
+          // shared
+        }
+      } else if (result.action === Share.dismissedAction) {
+        // dismissed
+      }
+    } catch (error) {
+      alert(error.message);
+    }
   };
   render() {
     return (
@@ -226,7 +247,7 @@ export default class HomeScreen extends React.Component {
                     backgroundColor: "black"
                   }}
                 >
-                  <TouchableOpacity
+                  <TouchableHighlight
                     style={{
                       flex: 1,
                       fontWeight: "bold",
@@ -234,9 +255,10 @@ export default class HomeScreen extends React.Component {
                       justifyContent: "center",
                       paddingRight: 10
                     }}
+                    onPress={this.onShare}
                   >
-                    <FontAwesome name="edit" size={25} />
-                  </TouchableOpacity>
+                    <AntDesign name="sharealt" size={25} />
+                  </TouchableHighlight>
                 </View>
               </View>
             </View>
