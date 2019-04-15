@@ -2,10 +2,11 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import RootNav from './navigation/RootNav';
 import Socket from './context/SocketContext';
+import Files from './context/FileContext';
 import firebase from 'firebase'
 
 export default class App extends React.Component {
-  componentWillMount(){
+  componentWillMount() {
     let config = {
       apiKey: "AIzaSyBgxvTXp5J9srxjKar-xBnOfY-2e08A144",
       authDomain: "coshoot-7b820.firebaseapp.com",
@@ -15,13 +16,15 @@ export default class App extends React.Component {
       messagingSenderId: "70890304758"
     };
     firebase.initializeApp(config);
-  
+
   }
   render() {
     return (
       <View style={{ flex: 1 }}>
         <Socket>
-          <RootNav />
+          <Files>
+            <RootNav />
+          </Files>
         </Socket>
       </View>
     );

@@ -10,26 +10,16 @@ import {
   Image,
   Share
 } from "react-native";
-import mockData from "./mock.js";
+import mockData from "../assets/mock.js";
 import { LinearGradient } from "expo";
 import { AntDesign } from "@expo/vector-icons";
-
+import {FileContext} from '../context/FileContext'
 export default class HomeScreen extends React.Component {
   state = {
     modalVisible: false,
-    data: [],
+    data: mockData,
     join: false
   };
-
-  componentWillMount() {
-    // fetch(mock)
-    //   .then(response => response.json())
-    //   .then(data =>
-    //     this.setState({ data }, () => {
-    //       console.log(this.state.data);
-    //     })
-    //   );
-  }
 
   setModalVisible = (modalVisible, join) => {
     this.setState({ modalVisible, join });
@@ -70,16 +60,16 @@ export default class HomeScreen extends React.Component {
             position: "relative"
           }}
         >
-          <Text style={{ fontSize: 20, color: "white" }}>CoShoot</Text>
+          <Text style={{ fontSize: 20, color: "white" }}>Co-Shoot</Text>
         </View>
 
         <Modal
           animationType="slide"
           transparent={false}
           visible={this.state.modalVisible}
-          onRequestClose={() => {
-            Alert.alert("Modal has been closed.");
-          }}
+          onRequestClose={() =>
+            this.setState({ modalVisible: false })
+          }
           style={{ flex: 1 }}
         >
           <View
@@ -192,95 +182,99 @@ export default class HomeScreen extends React.Component {
             </Text>
           </TouchableOpacity>
         </View>
-        <FlatList
-          style={{ flex: 1 }}
-          data={mockData}
-          keyExtractor={item => item.title}
-          renderItem={each => (
-            <View
-              style={{
-                borderWidth: 1,
-                borderColor: "#ddd",
-                borderBottomWidth: 5,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 2,
-                elevation: 1
-              }}
-            >
-              <View style={{ justifyContent: "center" }}>
-                <Image
-                  style={{ height: 160, width: "100%", borderRadius: 8 }}
-                  source={{
-                    uri: each.item.thumbnail_image
-                  }}
-                  resizeMode="cover"
-                />
-                <LinearGradient
-                  colors={["transparent", "black"]}
-                  style={{
-                    borderRadius: 8,
-                    height: 160,
-                    width: "100%",
-                    position: "absolute",
-                    top: 0,
-                    right: 0,
-                    left: 0
-                  }}
-                />
+        <FileContext.Consumer>
+          {files =>
+            <FlatList
+              style={{ flex: 1 }}
+              data={[...files.files, ...this.state.data]}
+              keyExtractor={item => item.title}
+              renderItem={each => (
                 <View
                   style={{
-                    flexDirection: "column",
-                    position: "absolute",
+                    borderWidth: 1,
+                    borderColor: "#ddd",
+                    borderBottomWidth: 5,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 2,
+                    elevation: 1
+                  }}
+                >
+                  <View style={{ justifyContent: "center" }}>
+                    <Image
+                      style={{ height: 160, width: "100%", borderRadius: 8 }}
+                      source={{
+                        uri: each.item.thumbnail_image
+                      }}
+                      resizeMode="cover"
+                    />
+                    <LinearGradient
+                      colors={["transparent", "black"]}
+                      style={{
+                        borderRadius: 8,
+                        height: 160,
+                        width: "100%",
+                        position: "absolute",
+                        top: 0,
+                        right: 0,
+                        left: 0
+                      }}
+                    />
+                    <View
+                      style={{
+                        flexDirection: "column",
+                        position: "absolute",
 
-                    bottom: 10
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 18,
-                      color: "white",
-                      fontWeight: "bold",
-                      paddingHorizontal: 10
-                    }}
-                  >
-                    {each.item.title}
-                  </Text>
-                  <Text
-                    style={{
-                      paddingHorizontal: 10,
-                      marginTop: 5,
-                      fontSize: 18,
-                      color: "white",
-                      fontWeight: "bold"
-                    }}
-                  >
-                    {each.item.artist}
-                  </Text>
+                        bottom: 10
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 18,
+                          color: "white",
+                          fontWeight: "bold",
+                          paddingHorizontal: 10
+                        }}
+                      >
+                        {each.item.title}
+                      </Text>
+                      <Text
+                        style={{
+                          paddingHorizontal: 10,
+                          marginTop: 5,
+                          fontSize: 18,
+                          color: "white",
+                          fontWeight: "bold"
+                        }}
+                      >
+                        {each.item.artist}
+                      </Text>
+                    </View>
+                    <View
+                      style={{
+                        position: "absolute",
+                        right: 10,
+                        bottom: 10
+                      }}
+                    >
+                      <TouchableHighlight
+                        style={{
+                          flex: 1,
+                          fontWeight: "bold",
+                          justifyContent: "center"
+                        }}
+                        onPress={this.onShare}
+                      >
+                        <AntDesign name="sharealt" size={25} color="white" />
+                      </TouchableHighlight>
+                    </View>
+                  </View>
                 </View>
-                <View
-                  style={{
-                    position: "absolute",
-                    right: 10,
-                    bottom: 10
-                  }}
-                >
-                  <TouchableHighlight
-                    style={{
-                      flex: 1,
-                      fontWeight: "bold",
-                      justifyContent: "center"
-                    }}
-                    onPress={this.onShare}
-                  >
-                    <AntDesign name="sharealt" size={25} color="white" />
-                  </TouchableHighlight>
-                </View>
-              </View>
-            </View>
-          )}
-        />
+              )}
+            />
+          }
+        </FileContext.Consumer>
       </View>
     );
   }

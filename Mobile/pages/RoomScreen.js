@@ -96,7 +96,7 @@ export default class RoomScreen extends React.Component {
               }
             >
               <Text style={{ fontSize: 18, padding: 8, color: "white" }}>
-                Share Room Code
+                Code: {this.state.roomCode?this.state.roomCode:"joining..."}
               </Text>
             </TouchableOpacity>
           )}

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from "react-native";
 import { Camera, Permissions } from "expo";
 import { SocketContext } from "../context/SocketContext";
 import firebase from "firebase";
+import { FileContext } from "../context/FileContext";
 
 export default class ShootScreen extends React.Component {
   constructor(props) {
@@ -11,16 +12,16 @@ export default class ShootScreen extends React.Component {
 
     this.camera = React.createRef();
     this.state = {
-      permissionsGranted: false,
       currentShooter: firstUser,
       timer: 5,
-      recording: false
+      recording: false,
+      uploadFiles: null
     };
   }
 
   static contextType = SocketContext;
 
-  async componentDidMount() {
+  componentDidMount() {
     let {
       firstUser,
       userInfo,
@@ -28,15 +29,21 @@ export default class ShootScreen extends React.Component {
       roomId
     } = this.props.navigation.state.params;
 
-    let cameraResponse = await Permissions.askAsync(Permissions.CAMERA);
-    if (cameraResponse.status == "granted") {
-      let audioResponse = await Permissions.askAsync(
+    Permissions.askAsync(Permissions.CAMERA).then(cameraResponse => {
+      Permissions.askAsync(
         Permissions.AUDIO_RECORDING
-      );
-      if (audioResponse.status == "granted") {
-        this.setState({ permissionsGranted: true });
-      }
-    }
+      ).then(audioResponse => {
+        if (audioResponse.status == "granted") {
+        }
+      })
+    })
+
+    this.context.on('finished processing', url => {
+      let icon = url.url2
+      let video = url.url
+      this.state.uploadFiles(video, icon)
+      this.props.navigation.navigate("Home")
+    })
 
     this.context.on("control", msg => {
       this.setState({ currentShooter: msg.user });
@@ -58,37 +65,41 @@ export default class ShootScreen extends React.Component {
       () =>
         this.setState({ timer: this.state.timer - 1 }, () => {
           console.log(this.state.timer);
+          if (this.state.timer === 4) {
+            this.camera
+              .recordAsync({
+                quality: Camera.Constants.VideoQuality["720p"]
+              })
+              .then(data => {
+                new Promise((resolve, reject) => {
+                  const xhr = new XMLHttpRequest();
+                  xhr.onload = function () {
+                    resolve(xhr.response); // when BlobModule finishes reading, resolve with the blob
+                  };
+                  xhr.onerror = function () {
+                    reject(new TypeError("Network request failed")); // error occurred, rejecting
+                  };
+                  xhr.responseType = "blob"; // use BlobModule's UriHandler
+                  xhr.open("GET", data.uri, true); // fetch the blob from uri in async mode
+                  xhr.send(null); // no initial data
+                }).then(blob => {
+                  const ref = firebase
+                    .storage()
+                    .ref()
+                    .child("files/" + roomId + "-" + userInfo.uid);
+                  ref.put(blob).then(snapshot => {
+                    let url = snapshot.ref
+                      .getDownloadURL()
+                      .then(url => this.context.emit("recieve file", url));
+                  });
+                });
+              });
+          }
         }),
       1000
     );
-    this.camera
-      .recordAsync({
-        quality: Camera.Constants.VideoQuality["720p"]
-      })
-      .then(data => {
-        new Promise((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.onload = function() {
-            resolve(xhr.response); // when BlobModule finishes reading, resolve with the blob
-          };
-          xhr.onerror = function() {
-            reject(new TypeError("Network request failed")); // error occurred, rejecting
-          };
-          xhr.responseType = "blob"; // use BlobModule's UriHandler
-          xhr.open("GET", data.uri, true); // fetch the blob from uri in async mode
-          xhr.send(null); // no initial data
-        }).then(blob => {
-          const ref = firebase
-            .storage()
-            .ref()
-            .child("files/" + roomId + "-" + userInfo.uid);
-          ref.put(blob).then(snapshot => {
-            let url = snapshot.ref
-              .getDownloadURL()
-              .then(url => this.context.emit("recieve file", url));
-          });
-        });
-      });
+
+
   }
 
   componentDidUpdate() {
@@ -111,66 +122,74 @@ export default class ShootScreen extends React.Component {
           backgroundColor: "black"
         }}
       >
-        <Camera
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            flexDirection: "column",
-            alignItems: "center"
-          }}
-          ref={ref => (this.camera = ref)}
-        >
-          <View
-            style={{
-              flex: 1,
-              backgroundColor: "transparent",
-              position: "absolute",
-              width: "85%",
-              height: "85%",
-              top: 60
-            }}
-          >
-            <TouchableOpacity
-              style={{
-                flex: 0.1,
-                alignSelf: "flex-start",
-                alignItems: "center"
-              }}
-              onPress={() => {
-                this.setState({
-                  type:
-                    this.state.type === Camera.Constants.Type.back
-                      ? Camera.Constants.Type.front
-                      : Camera.Constants.Type.back
-                });
-              }}
-            >
-              <Text style={{ fontSize: 18, marginBottom: 10, color: "white" }}>
-                {this.state.currentShooter.uid === userInfo.uid
-                  ? "You are live!"
-                  : `${this.state.currentShooter.name} has the shot`}
-              </Text>
-            </TouchableOpacity>
-
-            <View
-              style={{
-                justifyContent: "center",
-                alignItems: "center"
-              }}
-            >
-              <Text
+        <FileContext.Consumer>
+          {files => {
+            if (this.state.uploadFiles == null) {
+              this.setState({ uploadFiles: files.addfile })
+            }
+            return (
+              <Camera
                 style={{
-                  fontSize: 150,
-                  marginBottom: 10,
-                  color: "white",
-                  top: "90%"
+                  flex: 1,
+                  justifyContent: "center",
+                  flexDirection: "column",
+                  alignItems: "center"
                 }}
+                ref={ref => (this.camera = ref)}
               >
-                {this.state.timer > 0 ? this.state.timer : null}
-              </Text>
-            </View>
-          </View>
-        </Camera>
+                <View
+                  style={{
+                    flex: 1,
+                    backgroundColor: "transparent",
+                    position: "absolute",
+                    width: "85%",
+                    height: "85%",
+                    top: 60
+                  }}
+                >
+                  <TouchableOpacity
+                    style={{
+                      flex: 0.1,
+                      alignSelf: "flex-start",
+                      alignItems: "center"
+                    }}
+                    onPress={() => {
+                      this.setState({
+                        type:
+                          this.state.type === Camera.Constants.Type.back
+                            ? Camera.Constants.Type.front
+                            : Camera.Constants.Type.back
+                      });
+                    }}
+                  >
+                    <Text style={{ fontSize: 18, marginBottom: 10, color: "white" }}>
+                      {this.state.currentShooter.uid === userInfo.uid
+                        ? "You are live!"
+                        : `${this.state.currentShooter.name} has the shot`}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <View
+                    style={{
+                      justifyContent: "center",
+                      alignItems: "center"
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 150,
+                        marginBottom: 10,
+                        color: "white",
+                        top: "90%"
+                      }}
+                    >
+                      {this.state.timer > 0 ? this.state.timer : null}
+                    </Text>
+                  </View>
+                </View>
+              </Camera>)
+          }}
+        </FileContext.Consumer>
         <View
           style={{
             width: "85%",
@@ -239,6 +258,7 @@ export default class ShootScreen extends React.Component {
             </Text>
           </TouchableOpacity>
         </View>
+
       </View>
     );
   }
